@@ -18,6 +18,7 @@
 # Licencia: GPL v2
 
 import os
+import re
 import sys
 import subprocess
 import hashlib
@@ -326,6 +327,41 @@ def _cargarBuildVars(dir_base: str = DIR_BASE) -> dict:
 	except Exception as e:
 		print(f"  ⚠ No se pudo importar buildVars.py: {e}")
 		return None
+
+
+def construirEtiquetaRecursos(
+	addon_version: str = None,
+	tag_release: str = None,
+	dir_base: str = DIR_BASE,
+) -> str:
+	"""
+	Construye la etiqueta de recursos a partir de la versión del addon.
+
+	Si se proporciona una etiqueta explícita, se respeta. Si no, intenta
+	obtener la versión desde buildVars.py del repositorio y, finalmente,
+	extraer el primer bloque numérico para formar una etiqueta del estilo
+	'recursos_2026'. Si no es posible, usa 'recursos-latest'.
+	"""
+	if tag_release:
+		return tag_release
+
+	if addon_version is None:
+		build_vars = _cargarBuildVars(dir_base)
+		if build_vars:
+			addon_info = build_vars.get("addon_info", {})
+			addon_version = addon_info.get("addon_version")
+
+	if addon_version is None:
+		return "recursos-latest"
+
+	version_str = str(addon_version).strip()
+	if not version_str:
+		return "recursos-latest"
+
+	coincidencia = re.match(r"(\d+)", version_str)
+	if coincidencia:
+		return f"recursos_{coincidencia.group(1)}"
+	return "recursos-latest"
 
 
 def compilarRecursos(

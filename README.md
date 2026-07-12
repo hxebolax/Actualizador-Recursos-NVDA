@@ -50,7 +50,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 Editar las variables `env` del workflow:
 - `NOMBRE_COMPLEMENTO` — nombre del addon
-- `TAG_RELEASE` — tag de la release (debe coincidir con `tag_release` en Python)
+- `TAG_RELEASE` — etiqueta base de fallback para la release; si no se define y existe `buildVars.py`, el script genera una etiqueta automática a partir de `addon_version` (por ejemplo `recursos_2026`).
 
 ### 4. Requisitos del repositorio
 
