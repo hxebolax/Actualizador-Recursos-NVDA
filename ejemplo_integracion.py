@@ -204,7 +204,8 @@ ActualizadorRecursos(
 
 	# GitHub
 	rama="main",
-	tag_release="recursos-latest",
+	# Si no se especifica, se deriva automáticamente de la versión del addon (ej: "recursos_2026.1")
+	tag_release="recursos-latest", 
 	timeout_http=15,
 	token_github=None,  # o "ghp_xxx" para repos privados
 

@@ -30,10 +30,11 @@ except ImportError:
 		if not addon_version:
 			return "recursos-latest"
 		import re
-		coincidencia = re.match(r"(\d+)", str(addon_version).strip())
-		if coincidencia:
-			return f"recursos_{coincidencia.group(1)}"
-		return "recursos-latest"
+		# Extrae hasta los dos primeros componentes numéricos (ej: 2026.1.2 -> 2026.1)
+		partes = re.findall(r"\d+", str(addon_version).strip())
+		if not partes:
+			return "recursos-latest"
+		return f"recursos_{'.'.join(partes[:2])}"
 
 try:
 	import addonHandler
