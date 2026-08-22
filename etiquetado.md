@@ -42,3 +42,5 @@ Si la etiqueta definida en el código Python no existe en el repositorio de GitH
 3.  El actualizador capturará el error y **abortará la comprobación silenciosamente**.
 4.  **Resultado:** El complemento dejará de buscar actualizaciones de recursos indefinidamente sin notificar al usuario.
 
+## Actualizando la implementación  
+Si se está actualizando una implementación anterior que no contemplaba el autoetiquetado se deben sobreescribir los tres archivos actualizadorRecursos.py, scons_idiomas.py y compilar_idiomas.yml en sus carpetas correspondientes. En compilar_idiomas.yml se deberá definir de nuevo la variable NOMBRE_COMPLEMENTO.
