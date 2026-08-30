@@ -22,6 +22,21 @@ from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 
 try:
+	from scons_idiomas import construirEtiquetaRecursos
+except ImportError:
+	def construirEtiquetaRecursos(addon_version=None, tag_release=None, dir_base=None):
+		if tag_release:
+			return tag_release
+		if not addon_version:
+			return "recursos-latest"
+		import re
+		# Extrae hasta los dos primeros componentes numéricos (ej: 2026.1.2 -> 2026.1)
+		partes = re.findall(r"\d+", str(addon_version).strip())
+		if not partes:
+			return "recursos-latest"
+		return f"recursos_{'.'.join(partes[:2])}"
+
+try:
 	import addonHandler
 	import languageHandler
 	from logHandler import log
@@ -128,6 +143,8 @@ class ActualizadorRecursos:
 		
 		# Rutas
 		self._ruta_complemento = self._obtenerRutaComplemento()
+		if "tag_release" not in opciones:
+			self._config["tag_release"] = self._resolverTagReleaseAutomatico()
 		self._ruta_idiomas = os.path.join(self._ruta_complemento, self._config["directorio_idiomas"])
 		self._ruta_docs = os.path.join(self._ruta_complemento, self._config["directorio_documentacion"])
 		self._ruta_estado = os.path.join(self._ruta_complemento, self._config["archivo_estado"])
@@ -566,6 +583,35 @@ class ActualizadorRecursos:
 			except Exception as e:
 				log.warning(f"Error en callback {nombre_cb}: {e}")
 	
+	def _resolverTagReleaseAutomatico(self) -> str:
+		"""Resuelve la etiqueta de recursos automáticamente desde la versión del addon instalado."""
+		version = self._obtenerVersionAddonInstalada()
+		return construirEtiquetaRecursos(addon_version=version, dir_base=self._ruta_complemento)
+
+	def _obtenerVersionAddonDesdeBuildVars(self) -> str:
+		"""Compatibilidad: intenta obtener addon_version desde buildVars.py si está disponible."""
+		if not os.path.exists(os.path.join(self._ruta_complemento, "buildVars.py")):
+			return ""
+		try:
+			import sys
+			import types
+			if self._ruta_complemento not in sys.path:
+				sys.path.insert(0, self._ruta_complemento)
+			for mod in ['SCons', 'SCons.Script', 'SCons.Node', 'SCons.Node.FS']:
+				if mod not in sys.modules:
+					sys.modules[mod] = types.ModuleType(mod)
+			m = sys.modules['SCons.Script']
+			for attr in ['EnsurePythonVersion', 'Variables', 'BoolVariable', 'Environment', 'Copy', 'Builder']:
+				if not hasattr(m, attr):
+					setattr(m, attr, lambda *a, **kw: None)
+			import buildVars
+			addon_info = getattr(buildVars, "addon_info", {})
+			if hasattr(addon_info, "get"):
+				return addon_info.get("addon_version", "")
+		except Exception:
+			pass
+		return ""
+
 	def _obtenerRutaComplemento(self) -> str:
 		directorio = os.path.dirname(os.path.abspath(__file__))
 		for _ in range(6):
@@ -677,6 +723,20 @@ class ActualizadorRecursos:
 			log.warning(f"ActualizadorRecursos: no se pudo leer hash del ZIP: {e}")
 		return ""
 	
+	def _obtenerVersionAddonInstalada(self) -> str:
+		"""Obtiene la versión del addon instalado usando addonHandler de NVDA."""
+		try:
+			import addonHandler
+			# Buscamos en todos los addons instalados
+			for addon in addonHandler.getAvailableAddons():
+				# Comparamos la ruta del addon con la ruta de nuestro complemento
+				if os.path.normpath(addon.path) == os.path.normpath(self._ruta_complemento):
+					return str(addon.version)
+		except Exception as e:
+			log.warning(f"Error obteniendo versión del addon con addonHandler: {e}")
+		
+		return ""
+
 	def _calcularHashCombinado(self) -> str:
 		"""Calcula hash combinado local con formato idéntico al workflow.
 		
